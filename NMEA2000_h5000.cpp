@@ -1,38 +1,45 @@
+#include "NMEA2000_h5000.h"
+#include "N2kMessages.h"
 
-
-
-void SetN2kPGN130824(tN2kMsg& N2kMsg, unsigned char SID, tN2kRangeResidualMode Mode) {
+void SetN2kPGN130824(tN2kMsg& N2kMsg, sPerformanceData &PerformanceData) {
     N2kMsg.SetPGN(130824L);
     N2kMsg.Priority=3;
-    N2kMsg.AddByte(SID);
-    N2kMsg.AddByte(0x7f);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( VMG,1e-02)                //Velocity Made Good  (m/s)
-	N2kMsg.AddByte(0x38);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( GroundWind,1e-02)		 //Ground Wind Speed (m/s)
-	N2kMsg.AddByte(0x36);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( NextLegTgtSpeed,1e-02)    // Next Leg Target Speed (m/s)
-	N2kMsg.AddByte(0x1d);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( VMGperf,1e-03)			 // VMG performance ( percent) 
-	N2kMsg.AddByte(0x7e);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( PolarBoatSpeed,1e-02)	 // Polar Boatspeed (m/s)
-	N2kMsg.AddByte(0x7c);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( PolarPerf,1e-03)			 // Polar Performance (percent)
-	N2kMsg.AddByte(0x53);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( TgtTWA,1e-04)		     // Target TWA (rad)
-	N2kMsg.AddByte(0x83);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( TideRate,1e-02)			 // Tide Rate (m/s)
-	N2kMsg.AddByte(0x84);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( TideSet,1e-04)			 // Tide Set (rad)
-	N2kMsg.AddByte(0x31);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( OppTackCOG,1e-04)		 // Opposite Tack COG (rad)
-	N2kMsg.AddByte(0x35);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( NextLegBearing,1e-04)	 // Next Leg Bearing (rad)
-	N2kMsg.AddByte(0x37);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( GroundWindDirection,1e-04) // Ground Wind Direction (rad)
-	N2kMsg.AddByte(0x33);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( OppTackTgtHeading,1e-04)	  // Opposite Tack Target Heading (rad)
-	N2kMsg.AddByte(0x50);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( AverageTrueWindDirection,1e-04)	// Average True Wind Direction (rad)
-	N2kMsg.AddByte(0x69);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( Course,1e-04)			  //Course over ground (rad)
-	N2kMsg.AddByte(0xd3);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( DrBearing,1e-04)			  // Dead Reckoning Bearing(rad)
-	N2kMsg.AddByte(0x81);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( DrDistance,1e-02)		  // Dead Reckoning Distance (m)
-	N2kMsg.AddByte(0x31);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( BiasAdvantage,1e-02)		  // Bias Advantage (m)
-	N2kMsg.AddByte(0x9a);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( oppTackCOG,1e-04)		  // Heading on Opposite Tack (true) (rad)
-	N2kMsg.AddByte(0x32);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( TackingPerf,1e-03)	      // Tacking Performance (percent)
-	N2kMsg.AddByte(0x82);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( LeewayAngle,1e-04)	      // Leeway Angle (rad)
-	N2kMsg.AddByte(0x82);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( HeelAngle,1e-04)			  // Heel Angle (rad)
-	N2kMsg.AddByte(0x9b);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( TrimAngle,1e-04)          // Trim Angle (rad)
-	N2kMsg.AddByte(0x35);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( OptimalWindAngle,1e-04)   // Optimal Wind Angle (rad)
-	N2kMsg.AddByte(0x34);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( MastRake,1e-04)          // Mast Rake(rad)
-	N2kMsg.AddByte(0x9d);N2kMsg.AddByte(0x20); N2kMsg.Add2ByteUDouble( WindAngleMast,1e-04)      // Wind Angle To Mast(rad)
-	N2kMsg.AddByte(0x51);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( WindPhase, 1e-04)	     // Wind Phase (rad)
-	N2kMsg.AddByte(0x52);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( WindLift, 1e-04)			 // Wind Lift (rad)
-	N2kMsg.AddByte(0x1c);N2kMsg.AddByte(0x21); N2kMsg.Add2ByteUDouble( ChainLength, 1e-02)		 // Chain Length (m)
+   // N2kMsg.AddByte(SID);
+	AddPerformanceValue (N2kMsg,0x7f,0x20,Performancedata.VMG,1e-02);                	//Velocity Made Good  (m/s)
+	AddPerformanceValue (N2kMsg,0x38,0x21,Performancedata.GroundWind,1e-02);	 		//Ground Wind Speed (m/s)
+	AddPerformanceValue (N2kMsg,0x36,0x21,Performancedata.NextLegTgtSpeed,1e-02);    	// Next Leg Target Speed (m/s)
+	AddPerformanceValue (N2kMsg,0x1d,0x21,Performancedata.VMGperf,1e-03);		 		// VMG performance ( percent) 
+	AddPerformanceValue (N2kMsg,0x7e,0x20,Performancedata.PolarBoatSpeed,1e-02); 		// Polar Boatspeed (m/s)
+	AddPerformanceValue (N2kMsg,0x7c,0x20,Performancedata.PolarPerf,1e-03);		 		// Polar Performance (percent)
+	AddPerformanceValue (N2kMsg,0x53,0x20,Performancedata.TgtTWA,1e-04);	     		// Target TWA (rad)
+	AddPerformanceValue (N2kMsg,0x83,0x20,Performancedata.TideRate,1e-02);		 		// Tide Rate (m/s)
+	AddPerformanceValue (N2kMsg,0x84,0x20,Performancedata.TideSet,1e-04);		 		// Tide Set (rad)
+	AddPerformanceValue (N2kMsg,0x31,0x21,Performancedata.OppTackCOG,1e-04);	 		// Opposite Tack COG (rad)
+	AddPerformanceValue (N2kMsg,0x35,0x21,Performancedata.NextLegBearing,1e-04); 		// Next Leg Bearing (rad)
+	AddPerformanceValue (N2kMsg,0x37,0x21,Performancedata.GroundWindDirection,1e-04); 	// Ground Wind Direction (rad)
+	AddPerformanceValue (N2kMsg,0x33,0x21,Performancedata.OppTackTgtHeading,1e-04);  	// Opposite Tack Target Heading (rad)
+	AddPerformanceValue (N2kMsg,0x50,0x21,Performancedata.AverageTrueWindDirection,1e-04);	// Average True Wind Direction (rad)
+	AddPerformanceValue (N2kMsg,0x69,0x21,Performancedata.Course,1e-04);		  		//Course over ground (rad)
+	AddPerformanceValue (N2kMsg,0xd3,0x20,Performancedata.DrBearing,1e-04);		  		// Dead Reckoning Bearing(rad)
+	AddPerformanceValue (N2kMsg,0x81,0x20,Performancedata.DrDistance,1e-02);	  		// Dead Reckoning Distance (m)
+	AddPerformanceValue (N2kMsg,0x31,0x21,Performancedata.BiasAdvantage,1e-02);	  		// Bias Advantage (m)
+	AddPerformanceValue (N2kMsg,0x9a,0x20,Performancedata.oppTackCOG,1e-04);	  		// Heading on Opposite Tack (true) (rad)
+	AddPerformanceValue (N2kMsg,0x32,0x20,Performancedata.TackingPerf,1e-03);      		// Tacking Performance (percent)
+	AddPerformanceValue (N2kMsg,0x82,0x20,Performancedata.LeewayAngle,1e-04);      		// Leeway Angle (rad)
+	AddPerformanceValue (N2kMsg,0x82,0x20,Performancedata.HeelAngle,1e-04);		  		// Heel Angle (rad)
+	AddPerformanceValue (N2kMsg,0x9b,0x20,Performancedata.TrimAngle,1e-04);          	// Trim Angle (rad)
+	AddPerformanceValue (N2kMsg,0x35,0x20,Performancedata.OptimalWindAngle,1e-04);   	// Optimal Wind Angle (rad)
+	AddPerformanceValue (N2kMsg,0x34,0x21,Performancedata.MastRake,1e-04);         		// Mast Rake(rad)
+	AddPerformanceValue (N2kMsg,0x9d,0x20,Performancedata.WindAngleMast,1e-04);      	// Wind Angle To Mast(rad)
+	AddPerformanceValue (N2kMsg,0x51,0x21,Performancedata.WindPhase, 1e-04);     		// Wind Phase (rad)
+	AddPerformanceValue (N2kMsg,0x52,0x21,Performancedata.WindLift, 1e-04);		 		// Wind Lift (rad)
+	AddPerformanceValue (N2kMsg,0x1c,0x21,Performancedata.ChainLength, 1e-02);	 		// Chain Length (m)
+}
 
+void AddPerformanceValue ( tN2kMsg& N2kMsg, byte FirstByte, byte SecondByte, double Value, double precision){
+		if (!N2kIsNA(Value)){
+			N2kMsg.AddByte(FirstByte);
+			N2kMsg.AddByte(SecondByte); 
+			N2kMsg.Add2ByteUDouble( Value,precision);
+		}
 }
