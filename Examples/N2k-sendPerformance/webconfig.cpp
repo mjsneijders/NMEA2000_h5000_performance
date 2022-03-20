@@ -1,5 +1,5 @@
 #include "webconfig.h"
-
+#include "N2kMessages.h"   // use the rad2deg ktstoms etc functions
 String WebPageName = "N2K Performance Computer";
 //Check if header is present and correct
 bool is_authentified() {
@@ -87,7 +87,6 @@ void handleNotFound() {
 
 //setup the webserver to use the various pages
 void setupWebserver(){
-      delay(1000);
       webserver.on("/", startPage);
       webserver.on("/login", handleLogin);
       webserver.on("/logout", handleLogout);
@@ -235,11 +234,11 @@ void startPage() {
       content += pageAddTable ( 
         pageAddRow(
           pageAddValue ("Speed Through Water: ") + 
-          pageAddValue(getdouble(Configdata.Adjustments.WaterSpeed.get()))
+          pageAddValue(getdouble(msToKnots(Configdata.Adjustments.WaterSpeed.get())))
         )+
         pageAddRow(
           pageAddValue ("LeeWay: ") + 
-          pageAddValue(getdouble(Configdata.Adjustments.LeeWay.get()))
+          pageAddValue(getdouble(RadToDeg(Configdata.Adjustments.LeeWay.get())))
         )       
     );
   content += "<BR>";
@@ -421,39 +420,59 @@ void sourcesPage() {
       WINDerror="<font color='red'>a number between 0 and 255</font>";
       VARIATIONerror="<font color='red'>a number between 0 and 255</font>";
       int error=0; 
-      if (GPS=GPStxt.toInt() ){
+      if (GPS=GPStxt.toInt()   ){
           if  (GPS < 256 ) {
               GPSerror="";
-              error++;
           }
+      }else if ( GPStxt == "0"){
+         GPS = 0; 
+         GPSerror=""; 
+      }else {
+        error++; 
       }
       if (WATER=WATERtxt.toInt()){
         if (WATER < 256) {
               WATERerror="";
-              error++;   
         }
+      }else if ( WATERtxt == "0"){
+         WATER = 0; 
+         WATERerror=""; 
+      }else {
+        error++; 
       }
-      if (COMPASS=COMPASStxt.toInt()){
+      if (COMPASS=COMPASStxt.toInt()|| GPStxt == "0"){
         if (COMPASS < 256) {
-            COMPASSerror="";
-            error++;   
+            COMPASSerror="";  
         }
+      }else if ( COMPASStxt == "0"){
+         COMPASS = 0; 
+         COMPASSerror=""; 
+      }else {
+        error++; 
       }
       if (WIND=WINDtxt.toInt()) {
         //Serial.println ((String) "Wind is " + WIND) ; 
         if (WIND < 256) {
             WINDerror="";   
-            error++;
         }
+      }else if ( WINDtxt == "0"){
+         WIND = 0; 
+         WINDerror=""; 
+      }else {
+        error++; 
       }
       if (VARIATION=VARIATIONtxt.toInt()) {
        //Serial.println ((String) "VARIATION is " + VARIATION) ; 
         if (VARIATION < 256) {
             VARIATIONerror="";   
-            error++;
         }
+      }else if (VARIATIONtxt == "0"){
+         VARIATION = 0; 
+         VARIATIONerror=""; 
+      }else {
+        error++; 
       }
-       if ( error > 4) {
+       if ( error == 0) {
                 Configdata.Sources.Gps.set((uint8_t)GPS); 
                 Configdata.Sources.Water.set((uint8_t)WATER); 
                 Configdata.Sources.Compass.set((uint8_t)COMPASS); 
@@ -767,23 +786,39 @@ void adjustmentsPage() {
     webserver.send(301);
     return;
   }
-  float ADJSTW, ADJLEEWAY;
-  String ADJSTWtxt, ADJLEEWAYtxt;
+  double ADJSTW, ADJLEEWAY;
+  String ADJSTWtxt, ADJLEEWAYtxt, ADJSTWerror, ADJLEEWAYerror;
+
+  
   uint8_t error = 0; 
   if (webserver.hasArg("SUBMIT")) {
+       
+      
       ADJSTWtxt=webserver.arg("ADJSTW");
       Serial.print ("STW adjustment from webpage:  "+ ADJSTWtxt +"\n"); 
-      if (ADJSTW=ADJSTWtxt.toFloat()){
-                Configdata.Adjustments.WaterSpeed.set(ADJSTW); 
+      if (ADJSTW=ADJSTWtxt.toDouble()){
+                ADJSTWerror=""; 
+      }else if (ADJSTWtxt == "0" ||ADJSTWtxt == "0.0000"){
+                ADJSTW=0.0; 
+                ADJSTWerror=""; 
       }else{
-                error++; 
+              ADJSTWerror= "<font color='red'>use a float value</font>"; 
+              error++; 
       }
-      if (ADJLEEWAY=ADJLEEWAYtxt.toFloat()){
-                Configdata.Adjustments.LeeWay.set(ADJLEEWAY); 
+      ADJLEEWAYtxt=webserver.arg("ADJLEEWAY");
+      Serial.print ("STW adjustment from webpage:  "+ ADJSTWtxt +"\n"); 
+      if (ADJLEEWAY=ADJLEEWAYtxt.toDouble()){
+                ADJLEEWAYerror=""; 
+      }else if (ADJLEEWAYtxt == "0" | ADJLEEWAYtxt == "0.0000"){
+                ADJLEEWAY=0.0; 
+                ADJLEEWAYerror=""; 
       }else{
-                error++; 
+              ADJLEEWAYerror= "<font color='red'>use a float value</font>"; 
+              error++; 
       }
       if ( error == 0 ){ 
+                Configdata.Adjustments.WaterSpeed.set(KnotsToms(ADJSTW)); 
+                Configdata.Adjustments.LeeWay.set(DegToRad(ADJLEEWAY)); 
                 Configdata.Adjustments.write();
                 webserver.sendHeader("Location", "/");
                 webserver.sendHeader("Cache-Control", "no-cache");
@@ -791,19 +826,21 @@ void adjustmentsPage() {
                 return; 
       }
   }else{
-      ADJSTWtxt=getdouble(Configdata.Adjustments.WaterSpeed.get()); 
-      ADJLEEWAYtxt=getdouble(Configdata.Adjustments.LeeWay.get()); 
+      ADJSTWtxt=getdouble(msToKnots(Configdata.Adjustments.WaterSpeed.get())); 
+      ADJLEEWAYtxt=getdouble(RadToDeg(Configdata.Adjustments.LeeWay.get())); 
   }
   String content = getHead(WebPageName);
   content += "<form action='/adjustments' method='POST'>";
       content += pageAddTable ( 
         pageAddRow(
-          pageAddValue ("Adjust STW") + 
-          pageAddValue("<input type='text' name='ADJSTW' value='"+ADJSTWtxt+"'>")
+          pageAddValue ("Adjust STW (+/-Kts)") + 
+          pageAddValue("<input type='text' name='ADJSTW' value='"+ADJSTWtxt+"'>") +
+          pageAddValue(ADJSTWerror)
         )+
        pageAddRow(
-          pageAddValue ("Adjust Leeway") + 
-          pageAddValue("<input type='text' name='ADJLEEWAY' value='"+ADJLEEWAYtxt+"'>") 
+          pageAddValue ("Adjust Leeway (+/-Deg)") + 
+          pageAddValue("<input type='text' name='ADJLEEWAY' value='"+ADJLEEWAYtxt+"'>") +
+          pageAddValue(ADJLEEWAYerror)
         )+
        pageAddRow(
           pageAddValue("<input type='submit' name='SUBMIT' value='SUBMIT'>")+
@@ -870,5 +907,5 @@ String get32bit(uint32_t Number){
   return (String)Buf; 
 }
 String getdouble(double Number){
-  return String(Number, 8);
+  return String(Number, 4);
 }

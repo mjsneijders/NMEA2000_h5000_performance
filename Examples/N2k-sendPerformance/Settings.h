@@ -135,7 +135,8 @@ class cDeviceConfig{
 public: 
   cDeviceConfig();
   cSTRING Password; 
-  cUINT16 Checkvalue; 
+  cUINT16 Checkvalue;
+  cDOUBLE Variation;  
   void read();
   void write();
   void print();

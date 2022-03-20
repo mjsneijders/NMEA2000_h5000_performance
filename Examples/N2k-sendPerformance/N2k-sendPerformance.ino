@@ -9,6 +9,11 @@
 #include <memory>
 #include "Settings.h"
 #include "webconfig.h"
+#include <wmm.h>
+#include <Time.h>
+#include <TimeLib.h>
+#include <math.h> 
+
 cConfig Configdata;
 
 #include "NMEA2000_CAN.h"  // This will automatically choose right CAN library and create suitable NMEA2000 object
@@ -18,8 +23,7 @@ cConfig Configdata;
 #include "BoatData.h"
 
 
-#include <Time.h>
-#include <TimeLib.h>
+
 
 tBoatData Boatdata;
 
@@ -85,6 +89,7 @@ void setup_boatdata(){
   Boatdata.Course.Compass.LastUpdate=N2kUInt32NA;
   Boatdata.Course.Variation=2; 
   Boatdata.Course.Deviation=0; 
+  Boatdata.Course.VariationSource=N2kmagvar_WMM2020;
   
   Boatdata.Navigation.BearingReference=N2khr_true;
   Boatdata.Navigation.CalculationType=N2kdct_RhumbLine;
@@ -144,17 +149,22 @@ void setup() {
     
     Serial.begin(115200);
     Configdata.read();
+    Configdata.print(); 
+
+    wmm_init(); 
     setup_can1(); 
     setup_boatdata();
-    Configdata.print(); 
     setup_wifi(); 
     setupWebserver();
-    Serial.println (" setup done!"); 
+
 }
 
 void loop() {
     NMEA2000.ParseMessages();
     N2kSendPerformance();
+    CalculateVariation(); 
+    CalculateTide(); 
+    
     webserver.handleClient();
 }
 
@@ -174,4 +184,90 @@ void N2kSendPerformance() {
         }
    }
    
+}
+
+#define VariationUpdatePeriod 1000
+void CalculateVariation(){
+  static unsigned long TimeUpdated=millis();
+  static unsigned char SID=0; 
+  if ( Configdata.Calculation.CalculateVariation.get() == true) {
+            if  (millis() - TimeUpdated >= VariationUpdatePeriod ){
+              TimeUpdated=millis();
+            if ( Boatdata.Position.GNSSmethod > 0  && Boatdata.Position.GNSSmethod < 6 ){
+                  SID++; 
+                  float Variation;
+                  time_t epoch=(Boatdata.Datetime.DaysSince1970*24*3600) + Boatdata.Datetime.SecondsSinceMidnight;
+                  uint16_t shortyear=year(epoch); 
+                  while (shortyear > 100)  shortyear =shortyear - 100; 
+                  if (shortyear > 25) shortyear = 25;
+                  if (shortyear < 20) shortyear = 20;
+                  float wmmdate=wmm_get_date( shortyear,  month(epoch),  day(epoch));
+                  E0000(Boatdata.Position.Latitude, Boatdata.Position.Longitude, wmmdate, &Variation); 
+                  int intVariation=(int)(Variation); 
+                  double floatVariation=(Variation-intVariation) ; 
+                  floatVariation=(floatVariation/60)*100; 
+                  Variation=intVariation + floatVariation; 
+                  Boatdata.Course.Variation=DegToRad(Variation); 
+                  if (Boatdata.Course.Variation != Configdata.Device.Variation.get()){
+                      Configdata.Device.Variation.set(Boatdata.Course.Variation); 
+                  }
+                  if ( Configdata.Calculation.SendVariation.get() == true) {
+                      tN2kMsg N2kMsg;
+                      SetN2kPGN127258(N2kMsg, SID,Boatdata.Course.VariationSource,Boatdata.Datetime.DaysSince1970,Boatdata.Course.Variation);
+                      NMEA2000.SendMsg(N2kMsg);
+                  }
+               }else{
+                  if ( Configdata.Calculation.SendVariation.get() == true) {
+                        tN2kMsg N2kMsg;
+                        SetN2kPGN127258(N2kMsg, SID,Boatdata.Course.VariationSource,Boatdata.Datetime.DaysSince1970,Configdata.Device.Variation.get());
+                        NMEA2000.SendMsg(N2kMsg);
+                  }
+               }
+           }
+  }
+}
+
+void CalculateTide(double Heading, double STW, double COG, double SOG, double &TideSpeed, double &TideDirection){
+/*/
+input ONLY m/s for speeds and ONLY radials for angles. 
+
+Include math.h for M_PI, sin(), cos() and atan2() functions
+
+Input Variables: 
+Heading = True Compass heading
+STW = Speed Trough water
+SOG = Speed over Ground from GPS (m/s)
+COG = Course over Ground from GPS (radials)
+Output Variables: 
+TideSpeed = Theoretical Tide water Speed (m/s)
+TideDirection = Theoretical Tide Direction, relative to north (radials)
+
+//*/
+
+
+//create boat through water vector(x,y) from heading and STW
+double Xwater, Ywater; 
+Xwater = sin(Heading) * STW; 
+Ywater = cos(Heading) * STW; 
+
+//create ground vector(x,y) from COG and SOG.
+double Xground, Yground;
+Xground=sin(COG) * SOG; 
+Yground=cos(COG) * SOG; 
+
+//substract boat vector from wind vector to create Truewind Vector. 
+double Xtide, Ytide; 
+Xtide=Xwater-Xground;
+Ytide=Ywater-Yground; 
+
+//Calculate lenght of Tidevector for Tide Speed.
+TideSpeed = sqrt ((Xtide*Xtide) + (Ytide*Ytide)); 
+
+//Calculate Angle of Truewindvector for Truewind direction. 
+TideDirection = atan2 ( Xtide, Ytide); 
+
+//make sure result is 0-2pi radials
+while(TideDirection > (2* M_PI)) TideDirection -= 2* M_PI; 
+while(TideDirection < 0) TideDirection += 2* M_PI;
+
 }

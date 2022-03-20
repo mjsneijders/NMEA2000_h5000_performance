@@ -180,13 +180,15 @@ void tN2kHandler::HandleGNSS(const tN2kMsg &N2kMsg) {
        }
 }
 void tN2kHandler::HandleVariation(const tN2kMsg &N2kMsg) {
-   if ( N2kMsg.Source == Configdata.Sources.Variation.get() || Configdata.Sources.Variation.get() == 255 ){ 
-        unsigned char SID;
-        tN2kMagneticVariation source; 
-        uint16_t DaysSince1970; 
-        if (ParseN2kMagneticVariation(N2kMsg,SID,source, DaysSince1970, Boatdata.Course.Variation)){
-              Boatdata.Course.LastUpdate=millis(); 
-        }
+   if ( Configdata.Calculation.CalculateVariation.get() == false) {
+         if ( N2kMsg.Source == Configdata.Sources.Variation.get() || Configdata.Sources.Variation.get() == 255 ){ 
+              unsigned char SID;
+              tN2kMagneticVariation source; 
+              uint16_t DaysSince1970; 
+              if (ParseN2kMagneticVariation(N2kMsg,SID,source, DaysSince1970, Boatdata.Course.Variation)){
+                    Boatdata.Course.LastUpdate=millis(); 
+              }
+         }
    }
 }
 

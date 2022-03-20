@@ -37,6 +37,7 @@ struct tBoatData {
     uint32_t LastUpdate; 
     double Variation;
     double Deviation;
+    tN2kMagneticVariation VariationSource; 
     tBDSpeedHeading Water; 
     tBDSpeedHeading Gps; 
     tBDSpeedHeading Compass; 

@@ -2,10 +2,10 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <Esp.h>
-
+#include <N2kMessages.h>
 
 #define RESETPIN 23
-#define RESETCHECK 5000
+#define RESETCHECK 5001
 
 Preferences preferences;
 //string variable
@@ -295,18 +295,23 @@ void cNmea2000Config::print(){
       Password.namespc("Device");
       Checkvalue.name("Checkvalue"); 
       Checkvalue.namespc("Device"); 
+      Variation.name("Variation"); 
+      Variation.namespc("Device"); 
     }
     void cDeviceConfig::read(){
       Password.read(); 
       Checkvalue.read(); 
+      Variation.read(); 
     }
     void cDeviceConfig::write(){
       Password.write(); 
       Checkvalue.write(); 
+      Variation.write();
     }
     void cDeviceConfig::print(){
       Password.print(); 
        Checkvalue.print(); 
+       Variation.print();
     }
 // Calculationsconfig
     cCalculationsConfig::cCalculationsConfig(){
@@ -426,6 +431,7 @@ void cNmea2000Config::print(){
 		Adjustments.WaterSpeed.set(0);
 		Adjustments.LeeWay.set(0); 
 		Device.Password.set("password"); 
+    Device.Variation.set(DegToRad(2.0)); 
 		Device.Checkvalue.set(RESETCHECK);
    }
    void cConfig::resetcheck(){
